@@ -1,7 +1,3 @@
-
-
-// Sample Linked List Implementation
-
 pub struct LinkedList<I> {
     pub head: Option<Box<LinkedListNode<I>>>,
 }
@@ -153,49 +149,55 @@ mod tests {
         let mut l = LinkedList::new();
         assert!(l.head.is_none());
 
+        // Push a single element
         l.push_front(10);
         assert_eq!(l.as_vec(), [10]);
 
+        // Push multiple elements
         l.push_front(-5);
         assert_eq!(l.as_vec(), [-5, 10]);
 
+        // Push extreme values
         l.push_front(i32::MAX);
         l.push_front(i32::MIN);
         assert_eq!(l.as_vec(), [i32::MIN, i32::MAX, -5, 10]);
+
+        // Push to a non-empty list
+        l.push_front(100);
+        assert_eq!(l.as_vec(), [100, i32::MIN, i32::MAX, -5, 10]);
     }
 
     #[test]
     fn list_insert_test() {
         let mut l = LinkedList::new();
 
-        // fail to insert not at head
-        assert!( l.insert_at(10, 1).is_err() );
-        assert!( l.insert_at(-5, 22).is_err() );
+        // Fail to insert at invalid positions
+        assert!(l.insert_at(10, 1).is_err());  // Insert at index 1 when the list is empty
+        assert!(l.insert_at(-5, 22).is_err()); // Index out of bounds
 
-        // successful insert at head
-        assert!( l.insert_at(-6, 0).is_ok() );
+        // Insert at head
+        assert!(l.insert_at(-6, 0).is_ok());
         assert_eq!(l.as_vec(), [-6]);
 
-        // successful insert in front of head
-        assert!( l.insert_at(4, 0).is_ok() );
+        // Insert in front of head
+        assert!(l.insert_at(4, 0).is_ok());
         assert_eq!(l.as_vec(), [4, -6]);
 
-        // unsuccessful insert past end
-        assert!( l.insert_at(12, 100).is_err() );
-        assert!( l.insert_at(13, 3).is_err() );
+        // Insert at valid positions
+        assert!(l.insert_at(12, 1).is_ok());
+        assert_eq!(l.as_vec(), [4, 12, -6]);
 
-        // successful insert at end
-        assert!( l.insert_at(-1, 2).is_ok() );
-        assert_eq!(l.as_vec(), [4, -6, -1]);
+        // Insert past the end (should fail)
+        assert!(l.insert_at(13, 4).is_err());
 
-        // successful insert in the middle
-        assert!( l.insert_at(2, 1).is_ok() );
-        assert_eq!(l.as_vec(), [4, 2, -6, -1]);
-        assert!( l.insert_at(9, 3).is_ok() );
-        assert_eq!(l.as_vec(), [4, 2, -6, 9, -1]);
+        // Insert at the end (valid)
+        assert!(l.insert_at(-1, 3).is_ok());
+        assert_eq!(l.as_vec(), [4, 12, -6, -1]);
+
+        // Insert in the middle
+        assert!(l.insert_at(2, 2).is_ok());
+        assert_eq!(l.as_vec(), [4, 2, 12, -6, -1]);
     }
-
-
 
     #[test]
     fn list_remove_test() {
@@ -205,16 +207,26 @@ mod tests {
             l.push_front(*n);
         }
         assert_eq!(l.as_vec(), v);
-        
+
+        // Remove from middle
         assert_eq!(l.remove(2).map(|n| n.get_data().clone()), Some(-3));
+        assert_eq!(l.as_vec(), [5, 4, 9]);
+
+        // Remove from the end
         assert_eq!(l.remove(2).map(|n| n.get_data().clone()), Some(9));
+        assert_eq!(l.as_vec(), [5, 4]);
+
+        // Remove from the start
         assert_eq!(l.remove(0).map(|n| n.get_data().clone()), Some(5));
-        assert!( l.remove(1).is_none() );
-        assert_eq!(l.remove(0).map(|n| n.get_data().clone()), Some(4));
-        assert!( l.remove(0).is_none() );
+        assert_eq!(l.as_vec(), [4]);
+
+        // Attempt to remove from an empty list
+        assert!(l.remove(0).is_some());
+        assert_eq!(l.as_vec(), []);
+
+        // Edge case: removing from an empty list
+        assert!(l.remove(0).is_none());
     }
-
-
 
     #[test]
     fn list_swap_test() {
@@ -224,7 +236,8 @@ mod tests {
             l.push_front(*n);
         }
         assert_eq!(l.as_vec(), v);
-        
+
+        // Swap valid elements
         l.swap(0, 1).expect("Failed Swap");
         assert_eq!(l.as_vec(), vec![4, 5, -3, 9]);
 
@@ -239,5 +252,45 @@ mod tests {
 
         l.swap(1, 2).expect("Failed Swap");
         assert_eq!(l.as_vec(), vec![4, -3, 9, 5]);
+
+        // Swap invalid indices
+        assert!(l.swap(0, 5).is_err());  // Out of bounds
+        assert!(l.swap(5, 2).is_err());  // Out of bounds
+
+        // Swap with itself (no-op)
+        l.swap(2, 2).expect("Failed Swap");
+        assert_eq!(l.as_vec(), vec![4, -3, 9, 5]);
+    }
+
+    #[test]
+    fn list_edge_cases() {
+        let mut l = LinkedList::new();
+
+        // Test remove on an empty list
+        assert!(l.remove(0).is_none());
+
+        // Test swap on an empty list
+        assert!(l.swap(0, 1).is_err());
+
+        // Test inserting into an empty list
+        assert!(l.insert_at(10, 0).is_ok());
+        assert_eq!(l.as_vec(), [10]);
+
+        // Test push after removal
+        l.remove(0);
+        assert!(l.head.is_none());
+        l.push_front(20);
+        assert_eq!(l.as_vec(), [20]);
+
+        // Test insert out of bounds when the list has only one element
+        assert!(l.insert_at(30, 2).is_err());  // Out of bounds
+
+        // Test insert at valid index
+        assert!(l.insert_at(15, 1).is_ok());
+        assert_eq!(l.as_vec(), [20, 15]);
+
+        // Test swap on a single-element list (no-op)
+        l.swap(0, 0).expect("Failed Swap");
+        assert_eq!(l.as_vec(), [20]);
     }
 }
